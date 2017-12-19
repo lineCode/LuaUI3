@@ -1,6 +1,7 @@
 local ffi = require("ffi")
 local kernel32 = ffi.load("kernel32");
 
+require('common');
 require('winuser');
 require('gdi');
 
@@ -95,13 +96,13 @@ function CreateApiBind()
   function obj.RegisterClass(cls_name, wndproc)
     local wc = ffi.new("WNDCLASSEXW");
     wc.cbSize = ffi.sizeof("WNDCLASSEXW");
-    wc._style = bit.bor(CS_HREDRAW, CS_VREDRAW, CS_DBLCLKS);
+    wc._style = bit.bor(WINUSER.CS_HREDRAW, WINUSER.CS_VREDRAW, WINUSER.CS_DBLCLKS);
     wc.proc = wndproc;
     wc.cbClsExtra = 0;
     wc.cbWndExtra = 0;
     wc.hInstance = NULL;
     wc.icon = NULL;
-    wc.cursor = C.LoadCursorW(NULL, IDC_ARROW);
+    wc.cursor = C.LoadCursorW(NULL, WINUSER.IDC_ARROW);
     wc.background = C.GetStockObject(WHITE_BRUSH);
     wc.lpszMenuName = NULL;
     wc.lpszClassName = obj.A2W(cls_name);
@@ -159,7 +160,7 @@ function CreatePlotWindow(x, y, w, h, draw_proc)
 	local ps = ffi.new("PAINTSTRUCT");
 	local rect = ffi.new("RECT");
 	api.RegisterClass('my_wnd', function(hwnd, message, wparam, lparam)
-			if message == WM_NAMES.WM_PAINT then
+			if message == WINUSER.WM_PAINT then
 				local hdc = C.BeginPaint(hwnd, ps);
 				-- TODO GetClientRect
 				C.GetClientRect(hwnd, rect);
@@ -168,15 +169,15 @@ function CreatePlotWindow(x, y, w, h, draw_proc)
 --				C.LineTo(hdc, 100, 100);
 				C.EndPaint(hwnd, ps);
 --				C.SelectObject(hdc, old_pen);
-			elseif message == WM_NAMES.WM_DESTROY then
+			elseif message == WINUSER.WM_DESTROY then
 				C.PostQuitMessage(0);
 			end
 			return C.DefWindowProcW(hwnd, message, wparam, lparam);
 		end);
-	local hwnd = C.CreateWindowExW(0, api.A2W('my_wnd'), api.A2W('hello', CP_UTF8), WS_OVERLAPPEDWINDOW,
+	local hwnd = C.CreateWindowExW(0, api.A2W('my_wnd'), api.A2W('hello', CP_UTF8), WINUSER.WS_OVERLAPPEDWINDOW,
 		x, y, w, h, NULL, NULL, NULL, NULL);
 	assert(hwnd ~= 0);
-	C.ShowWindow(hwnd, SW_SHOW);
+	C.ShowWindow(hwnd, WINUSER.SW_SHOW);
 	return hwnd;
 end
 
