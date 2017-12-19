@@ -103,7 +103,7 @@ function CreateApiBind()
     wc.hInstance = NULL;
     wc.icon = NULL;
     wc.cursor = C.LoadCursorW(NULL, WINUSER.IDC_ARROW);
-    wc.background = C.GetStockObject(WHITE_BRUSH);
+    wc.background = C.GetStockObject(GDI.WHITE_BRUSH);
     wc.lpszMenuName = NULL;
     wc.lpszClassName = obj.A2W(cls_name);
     wc.small_icon = NULL;
@@ -123,7 +123,7 @@ local dir = api.ListDirFiles('F:\\*');
 
 function SetDCPenColor(hdc, color)
 	C.SetDCPenColor(hdc, color);
-	local old_pen = C.SelectObject(hdc, C.GetStockObject(DC_PEN));
+	local old_pen = C.SelectObject(hdc, C.GetStockObject(GDI.DC_PEN));
 end
 
 function MoveTo(hdc, x, y)
@@ -144,7 +144,7 @@ function FillRect(hdc, x, y, w, h)
 	rect.top = y;
 	rect.right = x + w;
 	rect.bottom = y + h;
-	C.FillRect(hdc, rect, C.GetStockObject(DC_BRUSH));
+	C.FillRect(hdc, rect, C.GetStockObject(GDI.DC_BRUSH));
 end
 
 function TextOut(hdc, x, y, str)
