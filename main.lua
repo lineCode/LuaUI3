@@ -111,8 +111,26 @@ function CreateApiBind()
     assert(ret ~= 0);
   end
   
-  function obj.CreateWindow(parent, cls_name, title, style, ex_style, x, y, w, h)
-    -- TODO carefully design.
+  function obj.CreateWindow(parent, title, style, ex_style, x, y, w, h, handler)
+		local ps = ffi.new("PAINTSTRUCT");
+		local rect = ffi.new("RECT");
+		obj.RegisterClass('LuaUI3_wnd', function(hwnd, message, wparam, lparam)
+				if message == WINUSER.WM_PAINT then
+					local hdc = C.BeginPaint(hwnd, ps);
+					C.GetClientRect(hwnd, rect);
+					handler.OnPaint(hdc, rect.right - rect.left, rect.bottom - rect.top);
+					C.EndPaint(hwnd, ps);
+				elseif message == WINUSER.WM_DESTROY then
+					handler.OnDestroy();
+--					C.PostQuitMessage(0);
+				end
+				return C.DefWindowProcW(hwnd, message, wparam, lparam);
+			end);
+		local hwnd = C.CreateWindowExW(parent, obj.A2W('LuaUI3_wnd'), obj.A2W(title), WINUSER.WS_OVERLAPPEDWINDOW,
+			x, y, w, h, NULL, NULL, NULL, NULL);
+		assert(hwnd ~= 0);
+		C.ShowWindow(hwnd, WINUSER.SW_SHOW);
+		return hwnd;
 	end
   
 	return obj;
@@ -157,28 +175,7 @@ function SetTextColor(hdc, color)
 end
 
 function CreatePlotWindow(x, y, w, h, draw_proc)
-	local ps = ffi.new("PAINTSTRUCT");
-	local rect = ffi.new("RECT");
-	api.RegisterClass('my_wnd', function(hwnd, message, wparam, lparam)
-			if message == WINUSER.WM_PAINT then
-				local hdc = C.BeginPaint(hwnd, ps);
-				-- TODO GetClientRect
-				C.GetClientRect(hwnd, rect);
-				draw_proc(hdc, rect.right - rect.left, rect.bottom - rect.top);
---				C.MoveToEx(hdc, 0, 100, NULL);
---				C.LineTo(hdc, 100, 100);
-				C.EndPaint(hwnd, ps);
---				C.SelectObject(hdc, old_pen);
-			elseif message == WINUSER.WM_DESTROY then
-				C.PostQuitMessage(0);
-			end
-			return C.DefWindowProcW(hwnd, message, wparam, lparam);
-		end);
-	local hwnd = C.CreateWindowExW(0, api.A2W('my_wnd'), api.A2W('hello', CP_UTF8), WINUSER.WS_OVERLAPPEDWINDOW,
-		x, y, w, h, NULL, NULL, NULL, NULL);
-	assert(hwnd ~= 0);
-	C.ShowWindow(hwnd, WINUSER.SW_SHOW);
-	return hwnd;
+
 end
 
 function RunMessageLoop()
@@ -198,7 +195,8 @@ local plot_data = {
 }
 
 math.randomseed(os.time());
-CreatePlotWindow(10, 10, 600, 400, function(hdc, width, height)
+api.CreateWindow(0, 'LuaUI3', WINUSER.WS_OVERLAPPEDWINDOW, 0, 10, 10, 600, 400, {
+	OnPaint = function(hdc, width, height)
 		local margin_top = 30;
 		local margin_bottom = 24;
 		local item_w = width / (#plot_data * 2 + 1);
@@ -231,7 +229,10 @@ CreatePlotWindow(10, 10, 600, 400, function(hdc, width, height)
 			x = x + item_w + item_w
 			i = i + 1;
 		end
-	end);
+	end,
+	OnDestroy = function()
+		C.PostQuitMessage(0);
+	end});
 
 RunMessageLoop();
 
